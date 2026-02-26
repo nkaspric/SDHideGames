@@ -1,12 +1,11 @@
 {
-  "name": "decky-plugin-template",
+  "name": "decky-sdhidegames-plugin",
   "version": "0.0.1",
-  "description": "A template to quickly create decky plugins from scratch, based on TypeScript and webpack",
+  "description": "A plugin to hide not install games from main menu.",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -c -w",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "bash ./deploy.sh"
   },
   "repository": {
     "type": "git",
@@ -19,8 +18,8 @@
     "steam-deck",
     "deck"
   ],
-  "author": "You <you@you.tld>",
-  "license": "BSD-3-Clause",
+  "author": "Nicolas KASPRIC",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/SteamDeckHomebrew/decky-plugin-template/issues"
   },
