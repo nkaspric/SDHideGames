@@ -1,57 +1,63 @@
 import os
+import json
+import logging
 
-# The decky plugin module is located at decky-loader/plugin
-# For easy intellisense checkout the decky-loader code repo
-# and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
-import decky
-import asyncio
+# Configuration du logging pour voir les erreurs dans /tmp/decky_ui.log
+logging.basicConfig(
+    filename="/tmp/sd_hide_games.log", 
+    format='%(asctime)s %(levelname)s %(message)s', 
+    level=logging.INFO
+)
 
 class Plugin:
-    # A normal method. It can be called from the TypeScript side using @decky/api.
-    async def add(self, left: int, right: int) -> int:
-        return left + right
+    def __init__(self):
+        # Utilise le répertoire officiel de Decky pour la persistance
+        self.settings_dir = os.environ.get("DECKY_PLUGIN_SETTINGS_DIR", "/tmp")
+        self.settings_path = os.path.join(self.settings_dir, "settings.json")
+        self.settings = self._load_settings()
+        logging.info("SDHideGames: Initialisation du backend")
 
-    async def long_running(self):
-        await asyncio.sleep(15)
-        # Passing through a bunch of random data, just as an example
-        await decky.emit("timer_event", "Hello from the backend!", True, 2)
+    def _load_settings(self):
+        """Charge les paramètres depuis le fichier JSON s'il existe."""
+        try:
+            if os.path.exists(self.settings_path):
+                with open(self.settings_path, "r") as f:
+                    data = json.load(f)
+                    logging.info(f"SDHideGames: Paramètres chargés: {data}")
+                    return data
+            return {"hider": False} # Valeur par défaut
+        except Exception as e:
+            logging.error(f"SDHideGames: Erreur lors du chargement: {e}")
+            return {"hider": False}
 
-    # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
+    async def get_settings(self):
+        """Retourne les réglages actuels au Frontend."""
+        try:
+            return {"success": True, "result": self.settings}
+        except Exception as e:
+            logging.error(f"SDHideGames: Erreur dans get_settings: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def set_settings(self, hider: bool):
+        """Sauvegarde l'état du toggle envoyé par le Frontend."""
+        try:
+            self.settings["hider"] = hider
+            # Création du dossier de config s'il n'existe pas
+            os.makedirs(self.settings_dir, exist_ok=True)
+            
+            with open(self.settings_path, "w") as f:
+                json.dump(self.settings, f)
+            
+            logging.info(f"SDHideGames: Nouvel état sauvegardé: hider={hider}")
+            return {"success": True}
+        except Exception as e:
+            logging.error(f"SDHideGames: Erreur dans set_settings: {e}")
+            return {"success": False, "error": str(e)}
+
     async def _main(self):
-        self.loop = asyncio.get_event_loop()
-        decky.logger.info("Hello World!")
+        """Méthode appelée au démarrage du plugin par Decky."""
+        logging.info("SDHideGames: Plugin démarré avec succès")
 
-    # Function called first during the unload process, utilize this to handle your plugin being stopped, but not
-    # completely removed
     async def _unload(self):
-        decky.logger.info("Goodnight World!")
-        pass
-
-    # Function called after `_unload` during uninstall, utilize this to clean up processes and other remnants of your
-    # plugin that may remain on the system
-    async def _uninstall(self):
-        decky.logger.info("Goodbye World!")
-        pass
-
-    async def start_timer(self):
-        self.loop.create_task(self.long_running())
-
-    # Migrations that should be performed before entering `_main()`.
-    async def _migration(self):
-        decky.logger.info("Migrating")
-        # Here's a migration example for logs:
-        # - `~/.config/decky-template/template.log` will be migrated to `decky.decky_LOG_DIR/template.log`
-        decky.migrate_logs(os.path.join(decky.DECKY_USER_HOME,
-                                               ".config", "decky-template", "template.log"))
-        # Here's a migration example for settings:
-        # - `~/homebrew/settings/template.json` is migrated to `decky.decky_SETTINGS_DIR/template.json`
-        # - `~/.config/decky-template/` all files and directories under this root are migrated to `decky.decky_SETTINGS_DIR/`
-        decky.migrate_settings(
-            os.path.join(decky.DECKY_HOME, "settings", "template.json"),
-            os.path.join(decky.DECKY_USER_HOME, ".config", "decky-template"))
-        # Here's a migration example for runtime data:
-        # - `~/homebrew/template/` all files and directories under this root are migrated to `decky.decky_RUNTIME_DIR/`
-        # - `~/.local/share/decky-template/` all files and directories under this root are migrated to `decky.decky_RUNTIME_DIR/`
-        decky.migrate_runtime(
-            os.path.join(decky.DECKY_HOME, "template"),
-            os.path.join(decky.DECKY_USER_HOME, ".local", "share", "decky-template"))
+        """Méthode appelée à la fermeture ou mise à jour du plugin."""
+        logging.info("SDHideGames: Plugin déchargé")

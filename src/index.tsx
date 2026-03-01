@@ -1,37 +1,38 @@
-import {
-  PanelSection,
-  PanelSectionRow,
-  staticClasses
-} from "@decky/ui";
-import {
-  definePlugin,
-} from "@decky/api"
-import { FaShip } from "react-icons/fa";
+import { PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
+import { definePlugin } from "@decky/api";
+import { GrHide } from "react-icons/gr";
 import MainMenu from "./MainMenu/mainMenu";
 
-function Content() {
+interface IServerAPI {
+  callPluginMethod: (methodName: string, args: any) => Promise<any>;
+}
 
-
+function Content({ serverApi }: { serverApi: IServerAPI }) {
   return (
-    <PanelSection title="FirstSection">
+    <PanelSection>
       <PanelSectionRow>
-        <MainMenu/>
+        {serverApi ? <MainMenu serverApi={serverApi} /> : <div>Loading...</div>}
       </PanelSectionRow>
     </PanelSection>
   );
-};
+}
 
-export default definePlugin(() => {
+export default definePlugin((...args: any[]) => {
+  console.log("DEBUG ARGS:", args);
+  const serverApi = args[0] as IServerAPI;
+  console.log("SDHideGames loaded, serverApi:", serverApi);
   return {
     // The name shown in various decky menus
     name: "SDHideGames",
     // The element displayed at the top of your plugin's menu
     titleView: <div className={staticClasses.Title}>SDHideGames</div>,
     // The content of your plugin's menu
-    content: <Content />,
-    // The icon displayed in the plugin list
-    icon: <FaShip />,
-    // The function triggered when your plugin unloads
-    onDismount() {},
+    content: <Content serverApi={serverApi} />,
+    icon: <GrHide />,
+    onDismount() {
+      // Cleaning
+      const style = document.getElementById("decky-hider-uninstalled");
+      style?.remove();
+    },
   };
 });
