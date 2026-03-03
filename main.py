@@ -33,6 +33,7 @@ class Plugin:
     async def get_settings(self):
         """Retourne les réglages actuels au Frontend."""
         try:
+            logging.error(f"SDHideGames: settings obtenus: {self.settings}")
             return {"success": True, "result": self.settings}
         except Exception as e:
             logging.error(f"SDHideGames: Erreur dans get_settings: {e}")

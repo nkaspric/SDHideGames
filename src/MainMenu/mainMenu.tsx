@@ -1,34 +1,24 @@
 import { Toggle } from "@decky/ui";
-import { IMainMenuProps, IMenuToogleProps } from "./mainMenuProps";
+import { IMainMenuProps } from "./mainMenuProps";
 import { useEffect, useState } from "react";
+import { call } from "@decky/api";
 
-const testToogle: IMenuToogleProps = {
-  value: false,
-  disabled: false,
-};
 const HIDE_STYLE_ID = "decky-hider-uninstalled";
 
-export default function MainMenu({ serverApi }: IMainMenuProps) {
-  const [hider, setHider] = useState(testToogle.value);
+export default function MainMenu({ isGameHide }: IMainMenuProps) {
+  const [hider, setHider] = useState(isGameHide);
+  const [hiderSave, setHiderSave] = useState(isGameHide);
 
-  // 1. Charger la config sauvegardée au montage
+  // 2. Appliquer le CSS et Sauvegarder
   useEffect(() => {
-    serverApi.callPluginMethod("get_settings", {}).then((res: any) => {
-      if (res.success && res.result.hider !== undefined) {
-        setHider(res.result.hider);
-      }
-    });
-  }, []);
+    console.log("Application du hider:", hider);
 
-  // 2. Appliquer le CSS quand le toggle change
-  useEffect(() => {
     let styleTag = document.getElementById(HIDE_STYLE_ID);
 
     if (hider) {
       if (!styleTag) {
         styleTag = document.createElement("style");
         styleTag.id = HIDE_STYLE_ID;
-        // Cible les capsules non installées UNIQUEMENT dans le ruban Home
         styleTag.innerHTML = `
           [class*="libraryhome_Home"] [class*="libraryhome_NonInstalled"],
           [class*="libraryhome_Home"] [class*="gamecapsule_NotInstalled"] {
@@ -37,14 +27,20 @@ export default function MainMenu({ serverApi }: IMainMenuProps) {
         `;
         document.head.appendChild(styleTag);
       }
-    } else {
-      styleTag?.remove();
+    } else styleTag?.remove();
+
+    if (hiderSave != hider) {
+      // On n'envoie au backend que si on n'est plus en phase de loading
+      call("set_settings", { hider })
+        .then((res) => {
+          console.log("Sauvegarde backend:", res);
+          setHiderSave(hider);
+        })
+        .catch((err) => console.error("Erreur sauvegarde:", err));
     }
+  }, [hider]);
 
-    // Sauvegarde persistante
-    serverApi.callPluginMethod("set_settings", { hider });
-  }, [hider, serverApi]);
-
+  // Si on est encore en train de charger, on peut afficher un spinner ou rien
   return (
     <span>
       <label>Hide not installed games</label>
@@ -61,7 +57,6 @@ export default function MainMenu({ serverApi }: IMainMenuProps) {
           onChange={(newValue) => {
             setHider(newValue);
           }}
-          disabled={testToogle.disabled}
         />
         <p style={{ margin: 0 }}>
           {hider ? <i>Games are hidden</i> : <i>Games are not hidden</i>}
