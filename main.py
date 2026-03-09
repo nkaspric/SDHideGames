@@ -33,7 +33,7 @@ class Plugin:
     async def get_settings(self):
         """Retourne les réglages actuels au Frontend."""
         try:
-            logging.error(f"SDHideGames: settings obtenus: {self.settings}")
+            logging.info(f"SDHideGames: settings obtenus: {self.settings}")
             return {"success": True, "result": self.settings}
         except Exception as e:
             logging.error(f"SDHideGames: Erreur dans get_settings: {e}")
@@ -54,6 +54,21 @@ class Plugin:
         except Exception as e:
             logging.error(f"SDHideGames: Erreur dans set_settings: {e}")
             return {"success": False, "error": str(e)}
+
+    async def get_installed_appids(self):
+            # Chemins des jeux installés
+            paths = ["/home/deck/.local/share/Steam/steamapps/", "/run/media/mmcblk0p1/steamapps/"]
+            installed_ids = []
+            for path in paths:
+                if os.path.exists(path):
+                    for f in os.listdir(path):
+                        if f.startswith("appmanifest_"):
+                            # Extraction de l'ID à partir du nom de fichier
+                            appid = f.replace("appmanifest_", "").replace(".acf", "")
+                            installed_ids.append(appid)
+
+            logging.info(f"SDHideGames: generate game list : {installed_ids}")
+            return installed_ids
 
     async def _main(self):
         """Méthode appelée au démarrage du plugin par Decky."""
